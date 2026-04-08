@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marathon Trainingsplan</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f3;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; }
+
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 14px; color: #6b6b66; margin-bottom: 2rem; }
+
+    /* ── Time input row ── */
+    .time-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 1.5rem;
+    }
+
+    .time-label {
+      font-size: 14px;
+      color: #6b6b66;
+      margin-right: 4px;
+    }
+
+    .time-unit {
+      font-size: 14px;
+      color: #6b6b66;
+    }
+
+    .time-sep {
+      font-size: 16px;
+      color: #9b9b96;
+      margin: 0 2px;
+    }
+
+    /* Both fields share identical base styles */
+    .time-select,
+    .time-input {
+      height: 36px;
+      border: 1px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 15px;
+      color: #1a1a18;
+      outline: none;
+      padding: 0 10px;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .time-select:focus,
+    .time-input:focus {
+      border-color: rgba(0,0,0,0.4);
+      box-shadow: none;
+    }
+
+    .time-select {
+      width: 60px;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%236b6b66'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      padding-right: 22px;
+    }
+
+    .time-input {
+      width: 60px;
+      text-align: center;
+    }
+
+    /* ── Pace summary ── */
+    .pace-box {
+      background: #ebebea;
+      border-radius: 8px;
+      padding: 0.875rem 1rem;
+      font-size: 13px;
+      color: #6b6b66;
+      margin-bottom: 1.75rem;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .pace-box span { display: flex; flex-direction: column; gap: 2px; }
+    .pace-box b { font-size: 17px; font-weight: 500; color: #1a1a18; }
+
+    /* ── Sessions ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 500;
+      color: #6b6b66;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .session-card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 10px;
+    }
+
+    .session-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .session-title { font-size: 14px; font-weight: 500; color: #1a1a18; }
+    .session-label { font-size: 11px; color: #6b6b66; margin-top: 2px; }
+    .session-detail { font-size: 13px; color: #6b6b66; margin-bottom: 12px; line-height: 1.5; }
+
+    .pace-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      font-size: 11px;
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .prog-row { display: flex; align-items: center; gap: 10px; }
+
+    .step-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      background: transparent;
+      cursor: pointer;
+      font-size: 18px;
+      color: #1a1a18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s;
+      flex-shrink: 0;
+    }
+
+    .step-btn:hover { background: #f0f0ee; }
+    .step-btn:active { transform: scale(0.96); }
+    .step-btn:disabled { opacity: 0.25; cursor: default; transform: none; }
+
+    .current-step { font-size: 13px; font-weight: 500; color: #1a1a18; flex: 1; }
+
+    .prog-dots { display: flex; gap: 5px; }
+
+    .prog-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d5d5d2;
+      border: 0.5px solid #bbbbb8;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .prog-dot.active { background: #1d9e75; border-color: #1d9e75; }
+
+    footer { margin-top: 2rem; font-size: 12px; color: #9b9b96; text-align: center; }
+
+    /* ── Dark mode ── */
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1a18; color: #e8e8e5; }
+      h1 { color: #e8e8e5; }
+      .subtitle, .time-label, .time-unit, .time-sep, .section-title { color: #9b9b96; }
+      .time-select, .time-input { background: #2a2a28; border-color: rgba(255,255,255,0.2); color: #e8e8e5; }
+      .time-select:focus, .time-input:focus { border-color: rgba(255,255,255,0.4); }
+      .time-select {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%239b9b96'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px center;
+      }
+      .pace-box { background: #2a2a28; }
+      .pace-box b, .session-title, .current-step { color: #e8e8e5; }
+      .pace-box, .session-label, .session-detail { color: #9b9b96; }
+      .session-card { background: #242422; border-color: rgba(255,255,255,0.1); }
+      .step-btn { color: #e8e8e5; border-color: rgba(255,255,255,0.2); }
+      .step-btn:hover { background: #2a2a28; }
+      .prog-dot { background: #3a3a38; border-color: #4a4a48; }
+      .pace-badge { background: #1e3a5f; color: #93c5fd; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="app"></div>
+</div>
+
+<script>
+/* =============================================================
+   COPY – alle Texte hier anpassen
+   ============================================================= */
+const COPY = {
+  pageTitle:    "Marathon Trainingsplan",
+  pageSubtitle: "Intervall-Sessions für deine Zielzeit – basierend auf HM-Pace",
+
+  inputLabel:   "Zielzeit",
+  unitHours:    "h",
+  unitMinutes:  "min",
+
+  paceLabels: {
+    hmTime: "HM-Zielzeit",
+    hmPace: "HM-Pace",
+    hmNote: "S1 & S4",
+    s2pace: "–10% schneller",
+    s2note: "S2 & S3",
+  },
+
+  sectionTitle: "4 Key Sessions",
+
+  sessions: [
+    {
+      title:  "Session 1 – Tempoausdauer",
+      label:  "Wiederholungen steigern",
+      detail: "HM-Pace · 60 Sek. Pause",
+      steps:  ["3 × 10 min", "3 × 10 + 2 × 5 min", "4 × 10 min", "5 × 10 min"],
+    },
+    {
+      title:  "Session 2 – 10% schneller",
+      label:  "Wiederholungen steigern",
+      detail: "10% schneller als HM-Pace · 60 Sek. Pause",
+      steps:  ["6 × 1 km", "7 × 1 km", "8 × 1 km", "9 × 1 km", "10 × 1 km", "11 × 1 km", "12 × 1 km"],
+    },
+    {
+      title:  "Session 3 – 400 m schnell",
+      label:  "Wiederholungen steigern, dann Tempo",
+      detail: "Schneller als S2-Pace · 60 Sek. Pause",
+      steps:  ["12 × 400 m", "14 × 400 m", "16 × 400 m", "18 × 400 m", "20 × 400 m"],
+    },
+    {
+      title:  "Session 4 – Langer Tempolauf",
+      label:  "Wiederholungen steigern",
+      detail: "HM-Pace · 60 Sek. Pause",
+      steps:  ["2 × 5 km", "5 + 5 + 2,5 + 2,5 km", "3 × 5 km", "4 × 5 km"],
+    },
+  ],
+
+  footer: "Einmal pro Woche · Longrun & aerobe Basis nicht vernachlässigen",
+};
+/* ============================================================= */
+
+
+function fmtPace(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.round(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function calcPaces(marathonMin) {
+  const hmMin  = marathonMin * 0.4817;
+  const hmPace = (hmMin * 60) / 21.0975;
+  return { hmTime: hmMin, hmPace, s2pace: hmPace * 0.90 };
+}
+
+function getPaceBadge(idx, paces) {
+  const p  = fmtPace(paces.hmPace) + '/km';
+  const p2 = fmtPace(paces.s2pace) + '/km';
+  return [p, p2, '< ' + p2, p][idx];
+}
+
+const state = { h: 3, m: 55, progressions: [0, 0, 0, 0] };
+
+function buildApp() {
+  document.getElementById('app').innerHTML = `
+    <h1>${COPY.pageTitle}</h1>
+    <p class="subtitle">${COPY.pageSubtitle}</p>
+
+    <div class="time-row">
+      <span class="time-label">${COPY.inputLabel}</span>
+      <select id="sel-h" class="time-select">
+        ${[2,3,4,5].map(v => `<option value="${v}"${v===state.h?' selected':''}>${v}</option>`).join('')}
+      </select>
+      <span class="time-unit">${COPY.unitHours}</span>
+      <span class="time-sep">:</span>
+      <input id="inp-m" class="time-input" type="number" min="0" max="59" value="${state.m}">
+      <span class="time-unit">${COPY.unitMinutes}</span>
+    </div>
+
+    <div class="pace-box" id="pace-box"></div>
+    <div class="section-title">${COPY.sectionTitle}</div>
+    <div id="sessions"></div>
+    <footer>${COPY.footer}</footer>
+  `;
+
+  document.getElementById('sel-h').addEventListener('change', e => { state.h = +e.target.value; render(); });
+  document.getElementById('inp-m').addEventListener('input',  e => { state.m = +e.target.value || 0; render(); });
+}
+
+function render() {
+  const paces = calcPaces(state.h * 60 + state.m);
+
+  const hmH = Math.floor(paces.hmTime / 60);
+  const hmM = Math.floor(paces.hmTime % 60);
+  const hmS = Math.round((paces.hmTime % 1) * 60);
+  const hmStr = hmH + ':' + String(hmM).padStart(2,'0') + (hmS ? ':' + String(hmS).padStart(2,'0') : '');
+
+  document.getElementById('pace-box').innerHTML = `
+    <span><small>${COPY.paceLabels.hmTime}</small><b>${hmStr} ${COPY.unitHours}</b></span>
+    <span><small>${COPY.paceLabels.hmPace}</small><b>${fmtPace(paces.hmPace)}/km</b></span>
+    <span><small>${COPY.paceLabels.s2pace}</small><b>${fmtPace(paces.s2pace)}/km</b></span>
+  `;
+
+  const container = document.getElementById('sessions');
+  container.innerHTML = '';
+
+  COPY.sessions.forEach((s, i) => {
+    const prog = state.progressions[i];
+    const dots = s.steps.map((_,di) =>
+      `<span class="prog-dot${di <= prog ? ' active' : ''}"></span>`
+    ).join('');
+
+    const card = document.createElement('div');
+    card.className = 'session-card';
+    card.innerHTML = `
+      <div class="session-header">
+        <div>
+          <div class="session-title">${s.title}</div>
+          <div class="session-label">${s.label}</div>
+        </div>
+        <span class="pace-badge">${getPaceBadge(i, paces)}</span>
+      </div>
+      <div class="session-detail">${s.detail}</div>
+      <div class="prog-row">
+        <button class="step-btn" onclick="step(${i},-1)"${prog===0?' disabled':''}>−</button>
+        <span class="current-step">${s.steps[prog]}</span>
+        <button class="step-btn" onclick="step(${i},1)"${prog===s.steps.length-1?' disabled':''}>+</button>
+        <div class="prog-dots">${dots}</div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function step(idx, dir) {
+  const s = COPY.sessions[idx];
+  state.progressions[idx] = Math.max(0, Math.min(s.steps.length - 1, state.progressions[idx] + dir));
+  render();
+}
+
+buildApp();
+render();
+</script>
+</body>
+</html>
