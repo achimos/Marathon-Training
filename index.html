@@ -49,6 +49,7 @@
     .time-select,
     .time-input {
       height: 36px;
+      width: 64px;
       border: 1px solid rgba(0,0,0,0.2);
       border-radius: 8px;
       background: #fff;
@@ -67,7 +68,7 @@
     }
 
     .time-select {
-      width: 64px;
+      width: 60px;
       cursor: pointer;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%236b6b66'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
@@ -174,7 +175,8 @@
 
     .prog-dot.active { background: #1d9e75; border-color: #1d9e75; }
 
-    footer { margin-top: 2rem; font-size: 12px; color: #9b9b96; text-align: center; }
+    footer { margin-top: 2rem; font-size: 12px; color: #9b9b96; text-align: center; line-height: 1.7; }
+    footer a { color: #9b9b96; text-decoration: underline; }
 
     /* ── Dark mode ── */
     @media (prefers-color-scheme: dark) {
@@ -219,7 +221,9 @@ const COPY = {
   paceLabels: {
     hmTime: "HM-Zielzeit",
     hmPace: "HM-Pace",
+    hmNote: "S1 & S4",
     s2pace: "–10% schneller",
+    s2note: "S2 & S3",
   },
 
   sectionTitle: "4 Key Sessions",
@@ -251,14 +255,16 @@ const COPY = {
     },
   ],
 
-  footer: "Einmal pro Woche · Longrun & aerobe Basis nicht vernachlässigen",
+  footer: `Einmal pro Woche · Longrun & aerobe Basis nicht vernachlässigen<br>
+    Basierend auf den Key Sessions von <a href="https://www.youtube.com/watch?v=PUePgZBjRV4&t=341s" target="_blank">Lee Grantham</a>`,
 };
 /* ============================================================= */
 
 
 function fmtPace(sec) {
-  const m = Math.floor(sec / 60);
-  const s = Math.round(sec % 60);
+  let m = Math.floor(sec / 60);
+  let s = Math.round(sec % 60);
+  if (s === 60) { m += 1; s = 0; }
   return m + ':' + String(s).padStart(2, '0');
 }
 
